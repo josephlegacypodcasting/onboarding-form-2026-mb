@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 const WEBHOOK_URL =
-  "https://sephar2447.app.n8n.cloud/webhook/9724150f-acda-4c57-a463-b04964d628a4";
+  "https://sephar2447.app.n8n.cloud/webhook/ace17bce-3b6c-42d2-ab0d-df9ad967257f";
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
