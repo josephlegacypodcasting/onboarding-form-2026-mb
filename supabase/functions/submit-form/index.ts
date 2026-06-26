@@ -117,7 +117,7 @@ async function sendSlackSubmissionNotification(payload: Record<string, unknown>)
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        channel: SLACK_CHANNEL_ID,
+        channel: SLACK_NOTIFICATION_DESTINATION,
         text: messageText,
       }),
     });
