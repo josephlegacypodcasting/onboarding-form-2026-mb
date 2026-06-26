@@ -271,6 +271,7 @@ serve(async (req) => {
             webhook_status_code: response.status,
             webhook_response: responseText,
           });
+          await sendSlackSubmissionNotification(body);
           return new Response(
             JSON.stringify({ success: true, message: "Form submitted successfully" }),
             {
