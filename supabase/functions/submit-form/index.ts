@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,6 +9,38 @@ const corsHeaders = {
 
 const WEBHOOK_URL =
   "https://sephar2447.app.n8n.cloud/webhook/6dbb80e4-545c-4f0b-9151-563a0bea6ac5";
+
+const supabaseAdmin = createClient(
+  Deno.env.get("SUPABASE_URL") ?? "",
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+);
+
+async function saveSubmissionLog(log: {
+  payload: Record<string, unknown>;
+  status: string;
+  attempts: number;
+  webhook_status_code?: number | null;
+  webhook_response?: string | null;
+  error_message?: string | null;
+}) {
+  try {
+    const { error } = await supabaseAdmin.from("submission_logs").insert({
+      payload: log.payload,
+      status: log.status,
+      attempts: log.attempts,
+      webhook_status_code: log.webhook_status_code ?? null,
+      webhook_response: log.webhook_response ?? null,
+      error_message: log.error_message ?? null,
+    });
+    if (error) {
+      console.error("Failed to save submission log:", error.message);
+    } else {
+      console.log(`Submission log saved (status: ${log.status})`);
+    }
+  } catch (err) {
+    console.error("Error saving submission log:", err);
+  }
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1500;
