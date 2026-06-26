@@ -78,7 +78,7 @@ export const onboardingSchema = z
     name: z.string().min(1, "Name is required"),
     phone: z.string().min(1, "Phone number is required"),
     address: z.string().min(1, "Address is required"),
-    website: z.string().url("Please enter a valid URL"),
+    website: flexibleUrl("Please enter a valid URL (e.g. site.com)"),
     social_links: z.string().min(1, "Please add at least one social link"),
 
     // Step 2 — Invoicing
