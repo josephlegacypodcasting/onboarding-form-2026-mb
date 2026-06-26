@@ -1,7 +1,7 @@
-import ContentUploadForm from "@/components/form/ContentUploadForm";
+import OnboardingForm from "@/components/onboarding/OnboardingForm";
 
 const Index = () => {
-  return <ContentUploadForm />;
+  return <OnboardingForm />;
 };
 
 export default Index;
