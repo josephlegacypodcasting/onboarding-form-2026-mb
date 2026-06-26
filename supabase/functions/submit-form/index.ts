@@ -10,7 +10,7 @@ const corsHeaders = {
 const WEBHOOK_URL =
   "https://sephar2447.app.n8n.cloud/webhook/6dbb80e4-545c-4f0b-9151-563a0bea6ac5";
 
-const SLACK_CHANNEL_ID = "C0AGCGRN4V6";
+const SLACK_NOTIFICATION_DESTINATION = Deno.env.get("SLACK_NOTIFICATION_DESTINATION") || "D09J1HN5KL5";
 const SLACK_GATEWAY_URL = "https://connector-gateway.lovable.dev/slack/api";
 
 const supabaseAdmin = createClient(
