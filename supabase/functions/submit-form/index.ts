@@ -10,10 +10,14 @@ const corsHeaders = {
 const WEBHOOK_URL =
   "https://sephar2447.app.n8n.cloud/webhook/6dbb80e4-545c-4f0b-9151-563a0bea6ac5";
 
+const SLACK_CHANNEL_ID = "C0AGCGRN4V6";
+const SLACK_GATEWAY_URL = "https://connector-gateway.lovable.dev/slack/api";
+
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
 );
+
 
 async function saveSubmissionLog(log: {
   payload: Record<string, unknown>;
@@ -39,6 +43,93 @@ async function saveSubmissionLog(log: {
     }
   } catch (err) {
     console.error("Error saving submission log:", err);
+  }
+}
+
+async function sendSlackSubmissionNotification(payload: Record<string, unknown>) {
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");
+
+  if (!LOVABLE_API_KEY || !SLACK_API_KEY) {
+    console.warn("LOVABLE_API_KEY or SLACK_API_KEY not configured, skipping Slack notification");
+    return;
+  }
+
+  const name = (payload.name as string) || "N/A";
+  const email = (payload.email as string) || "N/A";
+  const companyName = (payload.company_name as string) || "N/A";
+  const legalName = (payload.legal_name as string) || companyName;
+  const website = (payload.website as string) || "N/A";
+  const phone = (payload.phone as string) || "N/A";
+  const paymentMethod = (payload.payment_method as string) || "N/A";
+  const submittedAt = (payload.submitted_at as string) || new Date().toISOString();
+  const formType = (payload.form_type as string) || "Client Onboarding Form";
+
+  const lines = [
+    `*New ${formType} submission*`,
+    ``,
+    `*Name:* ${name}`,
+    `*Email:* ${email}`,
+    `*Phone:* ${phone}`,
+    `*Company:* ${companyName}`,
+    `*Legal Name:* ${legalName}`,
+    `*Website:* ${website}`,
+    `*Payment Method:* ${paymentMethod}`,
+    `*Submitted At:* ${submittedAt}`,
+  ];
+
+  const extraFields = [
+    "core_problem",
+    "decision_maker_titles",
+    "icp_1",
+    "icp_2",
+    "offer_icp_1",
+    "offer_icp_2",
+    "target_company_size",
+    "target_geography",
+    "unique_expertise",
+    "differentiator",
+    "top_social_channels",
+    "brand_voice",
+    "key_topics",
+    "has_blog",
+    "has_newsletter",
+    "sales_process",
+    "additional_info",
+  ];
+
+  for (const key of extraFields) {
+    const value = payload[key];
+    if (value === undefined || value === null || value === "") continue;
+    const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
+    const display = Array.isArray(value) ? value.join(", ") : String(value);
+    lines.push(`*${label}:* ${display}`);
+  }
+
+  const messageText = lines.join("\n");
+
+  try {
+    const res = await fetch(`${SLACK_GATEWAY_URL}/chat.postMessage`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "X-Connection-Api-Key": SLACK_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        channel: SLACK_CHANNEL_ID,
+        text: messageText,
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      console.error("Slack notification error:", data.error || res.statusText);
+    } else {
+      console.log("Slack submission notification sent successfully");
+    }
+  } catch (err) {
+    console.error("Failed to send Slack submission notification:", err);
   }
 }
 
@@ -180,6 +271,7 @@ serve(async (req) => {
             webhook_status_code: response.status,
             webhook_response: responseText,
           });
+          await sendSlackSubmissionNotification(body);
           return new Response(
             JSON.stringify({ success: true, message: "Form submitted successfully" }),
             {
