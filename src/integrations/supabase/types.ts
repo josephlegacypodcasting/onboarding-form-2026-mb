@@ -14,7 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      submission_logs: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_message: string | null
+          id: string
+          payload: Json
+          status: string
+          webhook_response: string | null
+          webhook_status_code: number | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload: Json
+          status: string
+          webhook_response?: string | null
+          webhook_status_code?: number | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          payload?: Json
+          status?: string
+          webhook_response?: string | null
+          webhook_status_code?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
