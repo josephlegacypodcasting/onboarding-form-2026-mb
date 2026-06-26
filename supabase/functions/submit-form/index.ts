@@ -162,13 +162,24 @@ serve(async (req) => {
     console.log("Submitting to n8n webhook");
 
     let lastError: string = "";
+    let lastStatusCode: number | null = null;
+    let lastResponseText: string | null = null;
 
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         const { response, responseText } = await callWebhook(body);
+        lastStatusCode = response.status;
+        lastResponseText = responseText;
 
         if (response.ok) {
           console.log(`Success on attempt ${attempt}`);
+          await saveSubmissionLog({
+            payload: body,
+            status: "success",
+            attempts: attempt,
+            webhook_status_code: response.status,
+            webhook_response: responseText,
+          });
           return new Response(
             JSON.stringify({ success: true, message: "Form submitted successfully" }),
             {
@@ -191,6 +202,14 @@ serve(async (req) => {
     }
 
     console.error("All retries failed:", lastError);
+    await saveSubmissionLog({
+      payload: body,
+      status: "failed",
+      attempts: MAX_RETRIES,
+      webhook_status_code: lastStatusCode,
+      webhook_response: lastResponseText,
+      error_message: lastError,
+    });
     await sendSlackErrorNotification(lastError, body);
 
     return new Response(
