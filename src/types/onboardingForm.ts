@@ -54,6 +54,21 @@ export const brandVoiceLabels: Record<BrandVoice, string> = {
   entertaining: "Entertaining / Energetic",
 };
 
+// ---------- Helpers ----------
+
+// Lenient URL validation: accepts site.com, www.site.com, http(s)://site.com, etc.
+// Does not require a protocol so users can type domains naturally.
+const flexibleUrl = (message = "Please enter a valid URL") =>
+  z
+    .string()
+    .trim()
+    .min(1, message)
+    .refine(
+      (value) =>
+        /^(https?:\/\/)?([\w-]+\.)+[a-z]{2,}(\/\S*)?$/i.test(value.trim()),
+      { message }
+    );
+
 // ---------- Schema ----------
 
 export const onboardingSchema = z
