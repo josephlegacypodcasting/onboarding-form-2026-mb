@@ -122,6 +122,11 @@ async function sendSlackSubmissionNotification(
     lines.push(`*${label}:* ${display}`);
   }
 
+  if (logViewUrl) {
+    lines.push(``);
+    lines.push(`📄 *View full responses:* <${logViewUrl}|Open response log>`);
+  }
+
   const messageText = lines.join("\n");
 
   try {
