@@ -271,6 +271,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    const appBaseUrl =
+      (typeof body.app_origin === "string" && body.app_origin) ||
+      req.headers.get("origin") ||
+      null;
     console.log("Submitting to n8n webhook");
 
     let lastError: string = "";
