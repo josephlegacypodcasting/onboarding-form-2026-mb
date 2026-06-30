@@ -26,27 +26,43 @@ async function saveSubmissionLog(log: {
   webhook_status_code?: number | null;
   webhook_response?: string | null;
   error_message?: string | null;
-}) {
+}): Promise<string | null> {
   try {
-    const { error } = await supabaseAdmin.from("submission_logs").insert({
-      payload: log.payload,
-      status: log.status,
-      attempts: log.attempts,
-      webhook_status_code: log.webhook_status_code ?? null,
-      webhook_response: log.webhook_response ?? null,
-      error_message: log.error_message ?? null,
-    });
+    const { data, error } = await supabaseAdmin
+      .from("submission_logs")
+      .insert({
+        payload: log.payload,
+        status: log.status,
+        attempts: log.attempts,
+        webhook_status_code: log.webhook_status_code ?? null,
+        webhook_response: log.webhook_response ?? null,
+        error_message: log.error_message ?? null,
+      })
+      .select("id")
+      .single();
     if (error) {
       console.error("Failed to save submission log:", error.message);
-    } else {
-      console.log(`Submission log saved (status: ${log.status})`);
+      return null;
     }
+    console.log(`Submission log saved (status: ${log.status})`);
+    return data?.id ?? null;
   } catch (err) {
     console.error("Error saving submission log:", err);
+    return null;
   }
 }
 
-async function sendSlackSubmissionNotification(payload: Record<string, unknown>) {
+function buildLogViewUrl(logId: string | null, appBaseUrl: string | null): string | null {
+  if (!logId) return null;
+  const base = appBaseUrl || Deno.env.get("APP_PUBLIC_URL");
+  if (!base) return null;
+  return `${base.replace(/\/$/, "")}/r/${logId}`;
+}
+
+async function sendSlackSubmissionNotification(
+  payload: Record<string, unknown>,
+  logViewUrl: string | null
+) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");
 
@@ -104,6 +120,11 @@ async function sendSlackSubmissionNotification(payload: Record<string, unknown>)
     const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
     const display = Array.isArray(value) ? value.join(", ") : String(value);
     lines.push(`*${label}:* ${display}`);
+  }
+
+  if (logViewUrl) {
+    lines.push(``);
+    lines.push(`📄 *View full responses:* <${logViewUrl}|Open response log>`);
   }
 
   const messageText = lines.join("\n");
@@ -250,6 +271,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
+    const appBaseUrl =
+      (typeof body.app_origin === "string" && body.app_origin) ||
+      req.headers.get("origin") ||
+      null;
     console.log("Submitting to n8n webhook");
 
     let lastError: string = "";
@@ -264,14 +289,14 @@ serve(async (req) => {
 
         if (response.ok) {
           console.log(`Success on attempt ${attempt}`);
-          await saveSubmissionLog({
+          const logId = await saveSubmissionLog({
             payload: body,
             status: "success",
             attempts: attempt,
             webhook_status_code: response.status,
             webhook_response: responseText,
           });
-          await sendSlackSubmissionNotification(body);
+          await sendSlackSubmissionNotification(body, buildLogViewUrl(logId, appBaseUrl));
           return new Response(
             JSON.stringify({ success: true, message: "Form submitted successfully" }),
             {
