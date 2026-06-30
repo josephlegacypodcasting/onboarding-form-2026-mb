@@ -285,14 +285,14 @@ serve(async (req) => {
 
         if (response.ok) {
           console.log(`Success on attempt ${attempt}`);
-          await saveSubmissionLog({
+          const logId = await saveSubmissionLog({
             payload: body,
             status: "success",
             attempts: attempt,
             webhook_status_code: response.status,
             webhook_response: responseText,
           });
-          await sendSlackSubmissionNotification(body);
+          await sendSlackSubmissionNotification(body, buildLogViewUrl(logId));
           return new Response(
             JSON.stringify({ success: true, message: "Form submitted successfully" }),
             {
