@@ -26,27 +26,43 @@ async function saveSubmissionLog(log: {
   webhook_status_code?: number | null;
   webhook_response?: string | null;
   error_message?: string | null;
-}) {
+}): Promise<string | null> {
   try {
-    const { error } = await supabaseAdmin.from("submission_logs").insert({
-      payload: log.payload,
-      status: log.status,
-      attempts: log.attempts,
-      webhook_status_code: log.webhook_status_code ?? null,
-      webhook_response: log.webhook_response ?? null,
-      error_message: log.error_message ?? null,
-    });
+    const { data, error } = await supabaseAdmin
+      .from("submission_logs")
+      .insert({
+        payload: log.payload,
+        status: log.status,
+        attempts: log.attempts,
+        webhook_status_code: log.webhook_status_code ?? null,
+        webhook_response: log.webhook_response ?? null,
+        error_message: log.error_message ?? null,
+      })
+      .select("id")
+      .single();
     if (error) {
       console.error("Failed to save submission log:", error.message);
-    } else {
-      console.log(`Submission log saved (status: ${log.status})`);
+      return null;
     }
+    console.log(`Submission log saved (status: ${log.status})`);
+    return data?.id ?? null;
   } catch (err) {
     console.error("Error saving submission log:", err);
+    return null;
   }
 }
 
-async function sendSlackSubmissionNotification(payload: Record<string, unknown>) {
+function buildLogViewUrl(logId: string | null): string | null {
+  if (!logId) return null;
+  const baseUrl = Deno.env.get("SUPABASE_URL");
+  if (!baseUrl) return null;
+  return `${baseUrl}/functions/v1/view-submission?id=${logId}`;
+}
+
+async function sendSlackSubmissionNotification(
+  payload: Record<string, unknown>,
+  logViewUrl: string | null
+) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");
 
