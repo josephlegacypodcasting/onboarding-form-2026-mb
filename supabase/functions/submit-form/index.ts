@@ -52,11 +52,11 @@ async function saveSubmissionLog(log: {
   }
 }
 
-function buildLogViewUrl(logId: string | null): string | null {
+function buildLogViewUrl(logId: string | null, appBaseUrl: string | null): string | null {
   if (!logId) return null;
-  const baseUrl = Deno.env.get("SUPABASE_URL");
-  if (!baseUrl) return null;
-  return `${baseUrl}/functions/v1/view-submission?id=${logId}`;
+  const base = appBaseUrl || Deno.env.get("APP_PUBLIC_URL");
+  if (!base) return null;
+  return `${base.replace(/\/$/, "")}/r/${logId}`;
 }
 
 async function sendSlackSubmissionNotification(
