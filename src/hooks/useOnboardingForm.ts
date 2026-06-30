@@ -174,6 +174,8 @@ export const useOnboardingForm = () => {
           ),
           form_type: "Client Onboarding Form",
           submitted_at: new Date().toISOString(),
+          app_origin:
+            typeof window !== "undefined" ? window.location.origin : undefined,
         };
 
         await submitFormPayload(payload);
