@@ -18,7 +18,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 212 29% 28%;
 
-    --primary: 12 91% 56%; /* #F54E29 - Brand orange */
+    --primary: 257 44% 44%; /* #5B3FA0 - Brand purple */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96.1%;
@@ -35,7 +35,10 @@ All colors MUST be HSL.
 
     --border: 216 18% 87%; /* #DADFE7 */
     --input: 216 18% 87%;
-    --ring: 12 91% 56%;
+    --ring: 257 44% 44%;
+
+    --brand-orange: 12 91% 56%; /* #F54E29 - Brand orange, used for CTAs/highlights */
+    --brand-orange-foreground: 0 0% 100%;
 
     --radius: 0.5rem;
 

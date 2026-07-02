@@ -1,73 +1,62 @@
-# Welcome to your Lovable project
+# Market Better — Client Onboarding Form
 
-## Project info
+A multi-step onboarding form built with Vite, React, TypeScript, shadcn-ui and Tailwind CSS. Submissions are sent to a Supabase Edge Function, forwarded to an n8n webhook, logged in Postgres, and notified to Slack with a link to a branded, shareable response page that SDRs can review with clients.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Local development
 
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Requirements: Node.js 18+ and npm.
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
+cp .env.example .env   # fill in the values below
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Environment variables (frontend)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file (or configure these in Vercel → Project Settings → Environment Variables):
 
-**Use GitHub Codespaces**
+| Variable | Description |
+| --- | --- |
+| `VITE_SUPABASE_URL` | Your Supabase project URL, e.g. `https://xxxx.supabase.co` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase anon/publishable key |
+| `VITE_SUPABASE_PROJECT_ID` | Supabase project ref (used by the Supabase CLI) |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+These are safe to expose client-side — they are the public anon key, not the service role key.
 
-## What technologies are used for this project?
+## Deploying to Vercel
 
-This project is built with:
+1. Push this repo to GitHub/GitLab and import it in [vercel.com](https://vercel.com/new).
+2. Framework preset: **Vite**. Build command `npm run build`, output directory `dist` (Vercel detects these automatically).
+3. Add the three `VITE_*` environment variables above in the Vercel project settings.
+4. Deploy. `vercel.json` already rewrites all routes to `index.html` for client-side routing.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Supabase Edge Functions
 
-## How can I deploy this project?
+The functions in `supabase/functions` run on Supabase, not Vercel — deploy them from the Supabase CLI:
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```sh
+supabase functions deploy submit-form
+supabase functions deploy view-submission
+supabase functions deploy daily-health-check
+```
 
-## Can I connect a custom domain to my Lovable project?
+### Function environment variables (set in Supabase → Project Settings → Edge Functions)
 
-Yes, you can!
+| Variable | Used by | Description |
+| --- | --- | --- |
+| `SUPABASE_URL` | all | Auto-provided by Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | `submit-form`, `view-submission` | Auto-provided by Supabase |
+| `SLACK_BOT_TOKEN` | `submit-form`, `daily-health-check` | Slack bot token (`xoxb-...`) with `chat:write` scope |
+| `SLACK_NOTIFY_USER_ID` | `submit-form`, `daily-health-check` | Slack user/channel ID to DM on errors / health checks |
+| `SLACK_NOTIFICATION_DESTINATION` | `submit-form` | Slack channel ID for the "new submission" notification |
+| `SUPABASE_ANON_KEY` | `daily-health-check` | Anon key, used to ping `submit-form` |
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+`view-submission` is deployed with `verify_jwt = false` (see `supabase/config.toml`) so the shareable response link opens directly in a browser without any auth headers — it's gated only by the unguessable submission ID.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## What's in the app
+
+- `src/components/onboarding` — the 8-step onboarding form.
+- `supabase/functions/submit-form` — receives submissions, retries the n8n webhook, logs to `submission_logs`, and notifies Slack with a link to the branded response page.
+- `supabase/functions/view-submission` — renders that response as a standalone, brand-styled HTML page (purple/orange Market Better palette, grouped by topic, print/PDF friendly) so an SDR can review it live with a client.
+- `supabase/functions/daily-health-check` — periodic check that `submit-form` and the n8n webhook are reachable.

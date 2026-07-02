@@ -10,8 +10,7 @@ const corsHeaders = {
 const WEBHOOK_URL =
   "https://sephar2447.app.n8n.cloud/webhook/6dbb80e4-545c-4f0b-9151-563a0bea6ac5";
 
-const SLACK_NOTIFICATION_DESTINATION = Deno.env.get("SLACK_NOTIFICATION_DESTINATION") || "D09J1HN5KL5";
-const SLACK_GATEWAY_URL = "https://connector-gateway.lovable.dev/slack/api";
+const SLACK_NOTIFICATION_DESTINATION = Deno.env.get("SLACK_NOTIFICATION_DESTINATION") || "U09J1HN1SNR";
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -63,11 +62,10 @@ async function sendSlackSubmissionNotification(
   payload: Record<string, unknown>,
   logViewUrl: string | null
 ) {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");
+  const SLACK_BOT_TOKEN = Deno.env.get("SLACK_BOT_TOKEN");
 
-  if (!LOVABLE_API_KEY || !SLACK_API_KEY) {
-    console.warn("LOVABLE_API_KEY or SLACK_API_KEY not configured, skipping Slack notification");
+  if (!SLACK_BOT_TOKEN) {
+    console.warn("SLACK_BOT_TOKEN not configured, skipping Slack notification");
     return;
   }
 
@@ -130,12 +128,11 @@ async function sendSlackSubmissionNotification(
   const messageText = lines.join("\n");
 
   try {
-    const res = await fetch(`${SLACK_GATEWAY_URL}/chat.postMessage`, {
+    const res = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Connection-Api-Key": SLACK_API_KEY,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${SLACK_BOT_TOKEN}`,
+        "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify({
         channel: SLACK_NOTIFICATION_DESTINATION,
@@ -144,8 +141,8 @@ async function sendSlackSubmissionNotification(
     });
 
     const data = await res.json();
-    if (!res.ok || !data.ok) {
-      console.error("Slack notification error:", data.error || res.statusText);
+    if (!data.ok) {
+      console.error("Slack notification error:", data.error);
     } else {
       console.log("Slack submission notification sent successfully");
     }

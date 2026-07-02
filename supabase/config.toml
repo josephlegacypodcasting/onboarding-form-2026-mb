@@ -1,1 +1,4 @@
-project_id = "mweiwhumuhvtufogdgvq"
+project_id = "ebrlenczijfhcrvjbkke"
+
+[functions.view-submission]
+verify_jwt = false
