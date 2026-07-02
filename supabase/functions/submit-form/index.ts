@@ -53,7 +53,9 @@ async function saveSubmissionLog(log: {
 
 function buildLogViewUrl(logId: string | null, appBaseUrl: string | null): string | null {
   if (!logId) return null;
-  const base = appBaseUrl || Deno.env.get("APP_PUBLIC_URL");
+  // Prefer the configured public URL so Slack links are always shareable,
+  // even for submissions made from localhost or direct API calls.
+  const base = Deno.env.get("APP_PUBLIC_URL") || appBaseUrl;
   if (!base) return null;
   return `${base.replace(/\/$/, "")}/r/${logId}`;
 }
