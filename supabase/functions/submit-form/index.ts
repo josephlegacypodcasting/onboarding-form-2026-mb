@@ -10,7 +10,8 @@ const corsHeaders = {
 const WEBHOOK_URL =
   "https://sephar2447.app.n8n.cloud/webhook/6dbb80e4-545c-4f0b-9151-563a0bea6ac5";
 
-const SLACK_NOTIFICATION_DESTINATION = Deno.env.get("SLACK_NOTIFICATION_DESTINATION") || "U09J1HN1SNR";
+const SLACK_NOTIFICATION_DESTINATION =
+  Deno.env.get("SLACK_NOTIFICATION_DESTINATION") || "#client-onboarding-alerts-2026";
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
@@ -73,54 +74,24 @@ async function sendSlackSubmissionNotification(
 
   const name = (payload.name as string) || "N/A";
   const email = (payload.email as string) || "N/A";
-  const companyName = (payload.company_name as string) || "N/A";
-  const legalName = (payload.legal_name as string) || companyName;
+  // The form has no company_name field; legal_name is the company identifier.
+  const companyName =
+    (payload.company_name as string) || (payload.legal_name as string) || "N/A";
   const website = (payload.website as string) || "N/A";
   const phone = (payload.phone as string) || "N/A";
-  const paymentMethod = (payload.payment_method as string) || "N/A";
   const submittedAt = (payload.submitted_at as string) || new Date().toISOString();
   const formType = (payload.form_type as string) || "Client Onboarding Form";
 
   const lines = [
-    `*New ${formType} submission*`,
+    `📝 *New ${formType} submission*`,
     ``,
     `*Name:* ${name}`,
     `*Email:* ${email}`,
     `*Phone:* ${phone}`,
     `*Company:* ${companyName}`,
-    `*Legal Name:* ${legalName}`,
     `*Website:* ${website}`,
-    `*Payment Method:* ${paymentMethod}`,
     `*Submitted At:* ${submittedAt}`,
   ];
-
-  const extraFields = [
-    "core_problem",
-    "decision_maker_titles",
-    "icp_1",
-    "icp_2",
-    "offer_icp_1",
-    "offer_icp_2",
-    "target_company_size",
-    "target_geography",
-    "unique_expertise",
-    "differentiator",
-    "top_social_channels",
-    "brand_voice",
-    "key_topics",
-    "has_blog",
-    "has_newsletter",
-    "sales_process",
-    "additional_info",
-  ];
-
-  for (const key of extraFields) {
-    const value = payload[key];
-    if (value === undefined || value === null || value === "") continue;
-    const label = key.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase());
-    const display = Array.isArray(value) ? value.join(", ") : String(value);
-    lines.push(`*${label}:* ${display}`);
-  }
 
   if (logViewUrl) {
     lines.push(``);
